@@ -12,6 +12,7 @@ connectDB();
 const app = express();
 
 //middlewares
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //routes
