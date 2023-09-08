@@ -132,8 +132,8 @@ const updateUserController = async (req, res) => {
                 userDetails.password = hashedPassword;
             }
             if (offStartTime && offEndTime) {
-                userDetails.offStartTime = offStartTime;
-                userDetails.offEndTime = offEndTime;
+                userDetails.offStartTime = moment(offStartTime, 'HH:mm').toISOString();
+                userDetails.offEndTime = moment(offEndTime, 'HH:mm').toISOString();
             } else if (offStartTime || offEndTime) {
                 return res.status(500).send({
                     success: false,
@@ -165,13 +165,9 @@ const updateUserController = async (req, res) => {
 
 const bookAppointmentController = async (req, res) => {
     try {
-        console.log('appointment details before: ', req.body);
-
         req.body.date = moment(req.body.date, 'DD-MM-YYYY').toISOString();
         req.body.startTime = moment(req.body.startTime, 'HH:mm').toISOString();
         req.body.endTime = moment(req.body.endTime, 'HH:mm').toISOString();
-
-        console.log('appointment details after: ', req.body);
 
         const { date, startTime, endTime, guestname } = req.body;
         const appointments = await appointmentModel.find({
@@ -208,12 +204,23 @@ const bookAppointmentController = async (req, res) => {
                             offEndTime: {
                                 $gte: startTime, $lte: endTime
                             }
+                        },
+                        {
+                            offStartTime: {
+                                $lte: startTime
+                            },
+                        },
+                        {
+                            offEndTime: {
+                                $gte: endTime
+                            },
                         }]
                 }
             ]
         });
 
         if (appointments.length > 0 || offTime.length > 0) {
+            offTime.length ? console.log(offTime[0]) : console.log(appointments[0]);
             return res.status(200).send({
                 message: `Guest is not available during this time slot`,
                 success: true
@@ -227,12 +234,7 @@ const bookAppointmentController = async (req, res) => {
         res.status(201).send({
             message: 'Appointment scheduled successfully',
             success: true,
-            data: {
-                ...newAppointment,
-                date: appointmentDate,
-                startTime: startTime,
-                endTime: endTime,
-            }
+            data: newAppointment
         });
     } catch (error) {
         console.error(error);
