@@ -165,62 +165,83 @@ const updateUserController = async (req, res) => {
 
 const bookAppointmentController = async (req, res) => {
     try {
-        req.body.date = moment(req.body.date, 'DD-MM-YYYY').toISOString();
         req.body.startTime = moment(req.body.startTime, 'HH:mm').toISOString();
         req.body.endTime = moment(req.body.endTime, 'HH:mm').toISOString();
 
-        const { date, startTime, endTime, guestname } = req.body;
+        const { startTime, endTime, guestname } = req.body;
+
+        if (endTime <= startTime) {
+            return res.status(200).send({
+                message: `End time should be greater than start time`,
+                success: true
+            });
+        }
+
         const appointments = await appointmentModel.find({
             $and: [
                 { guestname: guestname },
-                { date: date },
                 {
                     $or: [
                         {
                             startTime: {
-                                $gte: startTime, $lte: endTime
+                                $gte: startTime, $lt: endTime
                             },
                         },
                         {
                             endTime: {
-                                $gte: startTime, $lte: endTime
+                                $gt: startTime, $lte: endTime
                             }
-                        }]
+                        },
+                        {
+                            $and: [
+                                {
+                                    startTime: {
+                                        $lt: startTime
+                                    },
+                                },
+                                {
+                                    endTime: {
+                                        $gt: endTime
+                                    }
+                                }]
+                        }
+                    ]
                 }
             ]
         });
 
         const offTime = await userModel.find({
             $and: [
-                { username: req.body.guestname },
+                { username: guestname },
                 {
                     $or: [
                         {
                             offStartTime: {
-                                $gte: startTime, $lte: endTime
+                                $gte: startTime, $lt: endTime
                             },
                         },
                         {
                             offEndTime: {
-                                $gte: startTime, $lte: endTime
+                                $gt: startTime, $lte: endTime
                             }
                         },
                         {
-                            offStartTime: {
-                                $lte: startTime
-                            },
-                        },
-                        {
-                            offEndTime: {
-                                $gte: endTime
-                            },
+                            $and: [
+                                {
+                                    offStartTime: {
+                                        $lt: startTime
+                                    },
+                                },
+                                {
+                                    offEndTime: {
+                                        $gt: endTime
+                                    }
+                                }]
                         }]
-                }
-            ]
+                }]
         });
 
         if (appointments.length > 0 || offTime.length > 0) {
-            offTime.length ? console.log(offTime[0]) : console.log(appointments[0]);
             return res.status(200).send({
                 message: `Guest is not available during this time slot`,
                 success: true
@@ -268,6 +289,34 @@ const userAppointmentController = async (req, res) => {
     }
 }
 
+const deleteAppointmentController = async (req, res) => {
+    try {
+        const appointmentId = await appointmentModel.findOneAndDelete(
+            { _id: req.query.appointmentId });
+
+        console.log(appointmentId);
+        if (!appointmentId) {
+            return res.status(404).send({
+                success: false,
+                message: `No such appointment exist`
+            });
+        }
+
+        res.status(200).send({
+            success: true,
+            message: 'User appointment deleted successfully',
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            message: 'Error while fetching user\'s appointments',
+            success: false,
+            error
+        });
+    }
+}
+
 module.exports = {
     loginController,
     registerController,
@@ -275,4 +324,5 @@ module.exports = {
     updateUserController,
     bookAppointmentController,
     userAppointmentController,
+    deleteAppointmentController,
 };
