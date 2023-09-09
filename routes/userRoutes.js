@@ -4,8 +4,9 @@ const {
     registerController,
     getUserController,
     bookAppointmentController,
-    userAppointmentController, 
-    updateUserController} = require('../controllers/userController');
+    userAppointmentController,
+    updateUserController, 
+    deleteAppointmentController} = require('../controllers/userController');
 
 //router object
 const router = express.Router();
@@ -22,12 +23,15 @@ router.post('/login', loginController);
 router.get('/get-user', getUserController);
 
 // USER || POST
-router.post('/update-user', updateUserController);
+router.put('/update-user', updateUserController);
 
 // BOOK APPOINTMENT || POST
 router.post('/book-appointment', bookAppointmentController);
 
 // APPOINTMENTS LIST || GET
 router.get('/user-appointments', userAppointmentController);
+
+// REMOVE APPOINTMENT || GET
+router.delete('/delete-appointment', deleteAppointmentController);
 
 module.exports = router;

@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     offEndTime: {
         type: String
     },
-});
+}, { timestamps: true });
 
 const userModel = new mongoose.model('User', userSchema);
 
